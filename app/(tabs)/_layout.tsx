@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, BookOpen, PlusCircle, CalendarDays, User } from "lucide-react-native";
+import { Home, BookOpen, PlusCircle, CalendarDays, AlarmClock, User } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
@@ -37,6 +37,13 @@ export default function TabsLayout() {
         options={{
           title: "Plan",
           tabBarIcon: ({ color, size }) => <CalendarDays color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="scheduled"
+        options={{
+          title: "Reminders",
+          tabBarIcon: ({ color, size }) => <AlarmClock color={color} size={size} />,
         }}
       />
       <Tabs.Screen

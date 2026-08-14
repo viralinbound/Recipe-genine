@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "CookPilot",
-    "slug": "cookpilot",
-    "scheme": "cookpilot",
+    "name": "Recipe Genie",
+    "slug": "recipe-genie",
+    "scheme": "recipegenie",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,17 +12,30 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFF8F0"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.cookpilot.app"
+      "bundleIdentifier": "dev.recipegenie.app",
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "Recipe Genie adds a calendar event when you schedule a meal, spanning cooking start to eating time."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFF8F0"
       },
-      "package": "dev.cookpilot.app"
+      "package": "dev.recipegenie.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -30,13 +43,29 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "CookPilot uses your photos to set a profile picture."
+          "photosPermission": "Recipe Genie uses your photos to set a profile picture."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#E85D3F"
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Recipe Genie adds a calendar event when you schedule a meal, spanning cooking start to eating time."
         }
       ]
     ],
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "5c0c8406-f7a8-414b-b792-f04b8cd77b6b"
       }
     }
   }

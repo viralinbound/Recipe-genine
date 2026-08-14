@@ -8,6 +8,7 @@ import { View, ActivityIndicator } from "react-native";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -38,13 +39,17 @@ function useProtectedRoute() {
 
     const inAuthGroup = segments[0] === "(auth)";
     const onOnboarding = segments[0] === "onboarding";
+    // The password-recovery deep link (recipegenie://auth/reset-password)
+    // lands here with no session yet — it establishes one itself from the
+    // link's tokens, so it must be reachable without being signed in first.
+    const onPasswordReset = segments[0] === "auth";
 
-    if (!onboardingDone && !onOnboarding) {
+    if (!onboardingDone && !onOnboarding && !onPasswordReset) {
       router.replace("/onboarding");
       return;
     }
 
-    if (onboardingDone && !isAuthenticated && !inAuthGroup) {
+    if (onboardingDone && !isAuthenticated && !inAuthGroup && !onPasswordReset) {
       router.replace("/(auth)/login");
       return;
     }
@@ -76,8 +81,11 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="auth/reset-password" options={{ headerShown: true, title: "" }} />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="recipe/[id]" options={{ headerShown: true, title: "" }} />
+      <Stack.Screen name="schedule/[id]" options={{ headerShown: true, title: "Schedule Meal" }} />
+      <Stack.Screen name="collection/[id]" options={{ headerShown: true, title: "" }} />
     </Stack>
   );
 }
@@ -85,9 +93,11 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <RootNavigator />
-      </QueryClientProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <RootNavigator />
+        </QueryClientProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

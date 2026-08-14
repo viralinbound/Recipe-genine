@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -11,7 +12,6 @@ import {
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChefHat } from "lucide-react-native";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
@@ -52,8 +52,8 @@ export default function Login() {
         style={{ flex: 1 }}
       >
         <View style={styles.header}>
-          <ChefHat size={40} color="#E85D3F" />
-          <Text style={styles.title}>CookPilot</Text>
+          <Image source={require("../../assets/icon.png")} style={styles.logo} />
+          <Text style={styles.title}>Recipe Genie</Text>
           <Text style={styles.subtitle}>Welcome back, chef.</Text>
         </View>
 
@@ -111,6 +111,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF8F0", justifyContent: "center" },
   header: { alignItems: "center", marginBottom: 40 },
+  logo: { width: 72, height: 72, borderRadius: 18 },
   title: { fontSize: 28, fontWeight: "800", color: "#2B2118", marginTop: 8 },
   subtitle: { fontSize: 15, color: "#8A7A6C", marginTop: 4 },
   form: { paddingHorizontal: 24, gap: 12 },

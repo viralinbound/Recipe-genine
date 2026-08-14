@@ -8,12 +8,21 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Clock, Users, BarChart3, Sparkles, Youtube, Instagram, Globe } from "lucide-react-native";
+import { Clock, Users, BarChart3, Sparkles, Youtube, Instagram, Globe, AlarmClock, FolderPlus, Plus } from "lucide-react-native";
 import { useRecipe } from "@/hooks/useRecipes";
 import { useMakeHealthy } from "@/hooks/useImport";
+import {
+  useCollections,
+  useRecipeCollectionIds,
+  useAddRecipeToCollection,
+  useRemoveRecipeFromCollection,
+} from "@/hooks/useCollections";
+import CreateCollectionModal from "@/components/CreateCollectionModal";
+import type { Collection } from "@/shared/types";
 
 const SOURCE_ICON: Record<string, any> = {
   youtube: Youtube,
@@ -31,6 +40,12 @@ export default function RecipeDetail() {
     calorie_reduction_percent: number;
     health_benefits: string[];
   } | null>(null);
+  const [showCollectionsModal, setShowCollectionsModal] = useState(false);
+  const [showCreateCollection, setShowCreateCollection] = useState(false);
+  const { data: collections = [] } = useCollections();
+  const { data: memberCollectionIds = [] } = useRecipeCollectionIds(recipe?.id);
+  const addToCollection = useAddRecipeToCollection();
+  const removeFromCollection = useRemoveRecipeFromCollection();
 
   if (isLoading || !recipe) {
     return (
@@ -41,6 +56,14 @@ export default function RecipeDetail() {
   }
 
   const SourceIcon = recipe.source_type ? SOURCE_ICON[recipe.source_type] : null;
+
+  const toggleCollection = (collectionId: string) => {
+    if (memberCollectionIds.includes(collectionId)) {
+      removeFromCollection.mutate({ recipeId: recipe.id, collectionId });
+    } else {
+      addToCollection.mutate({ recipeId: recipe.id, collectionId });
+    }
+  };
 
   const handleMakeHealthy = async () => {
     try {
@@ -157,6 +180,26 @@ export default function RecipeDetail() {
         )}
 
         <TouchableOpacity
+          style={styles.scheduleButton}
+          onPress={() => router.push(`/schedule/${recipe.id}`)}
+        >
+          <AlarmClock size={18} color="#E85D3F" />
+          <Text style={styles.scheduleButtonText}>Schedule this meal</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.scheduleButton}
+          onPress={() => setShowCollectionsModal(true)}
+        >
+          <FolderPlus size={18} color="#E85D3F" />
+          <Text style={styles.scheduleButtonText}>
+            {memberCollectionIds.length > 0
+              ? `Saved to ${memberCollectionIds.length} collection${memberCollectionIds.length > 1 ? "s" : ""}`
+              : "Save to collection"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.healthyButton, makeHealthy.isPending && { opacity: 0.6 }]}
           onPress={handleMakeHealthy}
           disabled={makeHealthy.isPending}
@@ -180,6 +223,64 @@ export default function RecipeDetail() {
           </View>
         )}
       </View>
+
+      <Modal
+        visible={showCollectionsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCollectionsModal(false)}
+      >
+        <View style={styles.backdrop}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Save to collection</Text>
+            {collections.length === 0 && (
+              <Text style={styles.sheetEmpty}>You don't have any collections yet.</Text>
+            )}
+            <ScrollView style={{ maxHeight: 280 }}>
+              {collections.map((c: Collection) => {
+                const active = memberCollectionIds.includes(c.id);
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={styles.collectionOption}
+                    onPress={() => toggleCollection(c.id)}
+                  >
+                    <Text style={styles.collectionOptionText}>
+                      {c.emoji} {c.name}
+                    </Text>
+                    <View style={[styles.checkbox, active && styles.checkboxChecked]} />
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.newCollectionRow}
+              onPress={() => {
+                setShowCollectionsModal(false);
+                setShowCreateCollection(true);
+              }}
+            >
+              <Plus size={16} color="#E85D3F" />
+              <Text style={styles.newCollectionRowText}>New collection</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={() => setShowCollectionsModal(false)}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <CreateCollectionModal
+        visible={showCreateCollection}
+        onClose={() => setShowCreateCollection(false)}
+        onCreated={(c) => {
+          addToCollection.mutate({ recipeId: recipe.id, collectionId: c.id });
+          setShowCollectionsModal(true);
+        }}
+      />
     </ScrollView>
   );
 }
@@ -211,9 +312,28 @@ const styles = StyleSheet.create({
   stepText: { fontSize: 14, color: "#2B2118", flex: 1, lineHeight: 20, paddingTop: 3 },
   notesBox: { backgroundColor: "#FDE6DD", borderRadius: 14, padding: 16, marginBottom: 20 },
   notesText: { fontSize: 13, color: "#8A6558", lineHeight: 20 },
+  scheduleButton: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8, backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#E85D3F", borderRadius: 14, paddingVertical: 14, marginBottom: 12 },
+  scheduleButtonText: { color: "#E85D3F", fontWeight: "700", fontSize: 15 },
   healthyButton: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8, backgroundColor: "#4CAF6D", borderRadius: 14, paddingVertical: 15, marginBottom: 12 },
   healthyButtonText: { color: "#fff", fontWeight: "600", fontSize: 15 },
   healthyResultBox: { backgroundColor: "#EAF6ED", borderRadius: 14, padding: 16 },
   healthyResultTitle: { fontSize: 14, fontWeight: "700", color: "#2E7D4F", marginBottom: 6 },
   healthyResultText: { fontSize: 13, color: "#3F6B4F", lineHeight: 20 },
+  backdrop: { flex: 1, backgroundColor: "rgba(43,33,24,0.4)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: "#FFF8F0", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+  sheetTitle: { fontSize: 18, fontWeight: "800", color: "#2B2118", marginBottom: 16 },
+  sheetEmpty: { fontSize: 13, color: "#8A7A6C", marginBottom: 16 },
+  collectionOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EFE2D6",
+  },
+  collectionOptionText: { fontSize: 15, color: "#2B2118", fontWeight: "500" },
+  newCollectionRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 14 },
+  newCollectionRowText: { fontSize: 14, color: "#E85D3F", fontWeight: "700" },
+  doneButton: { backgroundColor: "#E85D3F", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 8 },
+  doneButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 });

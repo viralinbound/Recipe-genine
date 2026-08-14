@@ -59,13 +59,18 @@ export function useAuth() {
 
   const signUpWithEmail = useCallback(
     async (email: string, password: string, displayName: string) => {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      // Pass the name as auth user metadata rather than upserting a profiles
+      // row directly: signUp() doesn't yield an active session when email
+      // confirmation is required, so a client-side upsert here would be
+      // silently blocked by RLS. The on_auth_user_created DB trigger reads
+      // raw_user_meta_data.display_name and creates the profile row itself
+      // (as SECURITY DEFINER, so it isn't subject to that timing issue).
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: displayName } },
+      });
       if (error) throw error;
-      if (data.user) {
-        await supabase
-          .from("profiles")
-          .upsert({ id: data.user.id, display_name: displayName });
-      }
     },
     []
   );

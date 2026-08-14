@@ -40,19 +40,21 @@ export function useMakeHealthy() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (recipeId: string): Promise<HealthyVersionResult> => {
+      // The edge function reads `recipe_id` (snake_case) from the body — it
+      // was previously sent as `recipeId`, which the function never saw,
+      // always failing with "Missing recipe_id".
       const { data, error } = await supabase.functions.invoke("make-healthy", {
-        body: { recipeId },
+        body: { recipe_id: recipeId },
       });
       if (error) throw new Error(await fnErrorMessage(error, "Couldn't make a healthy version."));
       if (data?.error) throw new Error(data.error);
-      // The edge function returns { recipe, healthBenefits, calorieReduction }
-      // (camelCase; calorieReduction is a string like "30% fewer calories").
-      // Normalize it to HealthyVersionResult so the UI can rely on the shape.
-      const pctMatch = String(data?.calorieReduction ?? "").match(/\d+/);
+      // The edge function returns { recipe, calorie_reduction_percent,
+      // health_benefits } (snake_case; calorie_reduction_percent is already a number).
       return {
         recipe: data?.recipe ?? {},
-        calorie_reduction_percent: pctMatch ? parseInt(pctMatch[0], 10) : 0,
-        health_benefits: Array.isArray(data?.healthBenefits) ? data.healthBenefits : [],
+        calorie_reduction_percent:
+          typeof data?.calorie_reduction_percent === "number" ? data.calorie_reduction_percent : 0,
+        health_benefits: Array.isArray(data?.health_benefits) ? data.health_benefits : [],
       } satisfies HealthyVersionResult;
     },
     onSuccess: () => {
@@ -61,11 +63,23 @@ export function useMakeHealthy() {
   });
 }
 
+interface MealPlannerInput {
+  makeHealthy: boolean;
+  preferences?: string;
+  preferredRecipeIds?: string[];
+}
+
 export function useMealPlanner() {
   return useMutation({
-    mutationFn: async (makeHealthy: boolean): Promise<MealPlan> => {
+    mutationFn: async (input: MealPlannerInput): Promise<MealPlan> => {
       const { data, error } = await supabase.functions.invoke("meal-planner", {
-        body: { healthy: makeHealthy },
+        body: {
+          make_healthy: input.makeHealthy,
+          preferences: input.preferences?.trim() || undefined,
+          preferred_recipe_ids: input.preferredRecipeIds?.length
+            ? input.preferredRecipeIds
+            : undefined,
+        },
       });
       if (error) throw new Error(await fnErrorMessage(error, "Couldn't build a meal plan."));
       if (data?.error) throw new Error(data.error);

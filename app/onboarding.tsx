@@ -19,7 +19,7 @@ const SLIDES = [
   {
     icon: Link2,
     title: "Paste any recipe link",
-    body: "YouTube, Instagram, or any food blog — CookPilot handles it.",
+    body: "YouTube, Instagram, or any food blog — Recipe Genie handles it.",
   },
   {
     icon: Sparkles,
@@ -66,6 +66,7 @@ export default function Onboarding() {
         data={SLIDES}
         horizontal
         pagingEnabled
+        removeClippedSubviews={false}
         showsHorizontalScrollIndicator={false}
         keyExtractor={(_, i) => String(i)}
         onScroll={onScroll}

@@ -199,6 +199,7 @@ export default function Home() {
                 <FlatList
                   data={recent}
                   horizontal
+                  removeClippedSubviews={false}
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(i) => i.id}
                   contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
@@ -213,6 +214,7 @@ export default function Home() {
                 <FlatList
                   data={favorites}
                   horizontal
+                  removeClippedSubviews={false}
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(i) => i.id}
                   contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
@@ -227,6 +229,7 @@ export default function Home() {
                 <FlatList
                   data={quickMeals}
                   horizontal
+                  removeClippedSubviews={false}
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(i) => i.id}
                   contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}

@@ -85,7 +85,7 @@ export default function Profile() {
 
   const handleShareCookbook = async () => {
     await Share.share({
-      message: `Check out my CookPilot cookbook with ${recipes.length} recipes!`,
+      message: `Check out my Recipe Genie cookbook with ${recipes.length} recipes!`,
     });
   };
 

@@ -82,3 +82,20 @@ export interface HealthyVersionResult {
   calorie_reduction_percent: number;
   health_benefits: string[];
 }
+
+export interface ScheduledMeal {
+  id: string;
+  user_id: string;
+  recipe_id: string;
+  recipe_title: string;
+  scheduled_date: string; // YYYY-MM-DD
+  prep_time: number; // minutes
+  cook_time: number; // minutes
+  start_cooking_time: string; // ISO timestamp
+  target_eating_time: string; // ISO timestamp
+  reminder_offset: number; // minutes before start_cooking_time
+  notification_id: string | null;
+  calendar_event_id: string | null;
+  notes: string | null;
+  created_at: string;
+}

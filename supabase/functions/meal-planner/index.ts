@@ -15,9 +15,28 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `You are a meal-planning assistant. Given a user's list of saved recipes
 (title, cuisine, prep/cook time, tags), build a 7-day meal plan (Mon-Sun) with Breakfast,
 Lunch, Snack, and Dinner slots per day, reusing the user's own saved recipes wherever
-possible (repeat recipes across the week if needed — that's fine and realistic). Only invent
-a simple recipe title for a slot if there truly aren't enough saved recipes to fill it,
-and keep any invented meals simple and clearly labeled as such in quick_prep_note.
+possible. Only invent a simple recipe title for a slot if there truly aren't enough saved
+recipes to fill it, and keep any invented meals simple and clearly labeled as such in
+quick_prep_note.
+
+Prioritize variety across the week: avoid placing the same recipe on consecutive days,
+avoid repeating the same cuisine two days in a row where the recipe pool allows a different
+option, and spread different cuisines/flavor profiles across the 7 days so each day feels
+distinct. Only repeat a recipe within the same week if the saved recipe pool is too small to
+avoid it — repetition should be a last resort, not the default, even though it's fine when
+genuinely necessary.
+
+If "preferences" is provided, it's free-text guidance from the user about what kind of week
+they want (e.g. a cuisine, a diet, "quick meals only", "more protein") — bias the whole
+week's choices toward matching it as closely as the saved recipe pool allows, while still
+producing a complete, sensible 7-day plan.
+
+If "preferred_recipe_ids" is provided, those are recipes (matched by id in the recipes list)
+the user specifically wants included this week — make sure each one is used at least once
+across the 7 days, choosing a sensible slot for it (e.g. a breakfast recipe goes in a
+Breakfast slot), before filling the remaining slots with other saved recipes per the variety
+rule above.
+
 If "make_healthy" is true, bias choices toward lighter/healthier options and mention that
 in prep tips. Also produce a consolidated shopping list across the week (deduplicated,
 reasonable quantities) and 2-4 short prep tips.
@@ -68,7 +87,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { make_healthy } = await req.json().catch(() => ({ make_healthy: false }));
+    const { make_healthy, preferences, preferred_recipe_ids } = await req
+      .json()
+      .catch(() => ({ make_healthy: false, preferences: undefined, preferred_recipe_ids: undefined }));
 
     const { data: recipes, error: recipesErr } = await supabase
       .from("recipes")
@@ -84,6 +105,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const preferredIds: string[] = Array.isArray(preferred_recipe_ids) ? preferred_recipe_ids : [];
+    const preferredSet = new Set(preferredIds);
+    const recipesWithFlags = recipes.map((r) => ({ ...r, preferred: preferredSet.has(r.id) }));
+
     const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -98,7 +123,11 @@ Deno.serve(async (req: Request) => {
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
-            content: JSON.stringify({ make_healthy: !!make_healthy, recipes }),
+            content: JSON.stringify({
+              make_healthy: !!make_healthy,
+              preferences: typeof preferences === "string" ? preferences : undefined,
+              recipes: recipesWithFlags,
+            }),
           },
         ],
       }),
