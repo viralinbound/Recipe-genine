@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Recipe Genie</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .toc-link.active {
+            color: #059669;
+            font-weight: 600;
+            border-left: 2px solid #059669;
+            padding-left: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased leading-relaxed min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl flex items-center justify-center font-extrabold text-xl shadow-md shadow-emerald-500/20">
+                    🧞
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-slate-900 text-lg tracking-tight">Recipe Genie</span>
+                        <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">App Legal</span>
+                    </div>
+                    <p class="text-xs text-slate-500 hidden sm:block">Paste a link. Get a recipe. Cook smarter.</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="copySupportEmail()" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-all border border-slate-200">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Contact Support</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-800">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="toast-message">Email copied to clipboard!</span>
+    </div>
+
+    <!-- Main Container -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex-grow w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+            <!-- Sidebar Navigation (Desktop Table of Contents) -->
+            <aside class="lg:col-span-1 hidden lg:block">
+                <div class="sticky top-24 space-y-4 p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+                    <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-400">On this page</h3>
+                    <nav class="space-y-1 text-sm text-slate-600" id="desktop-toc">
+                        <a href="#section-1" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">1. Information we collect</a>
+                        <a href="#section-2" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">2. How we use it</a>
+                        <a href="#section-3" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">3. Who else sees it</a>
+                        <a href="#section-4" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">4. Device permissions</a>
+                        <a href="#section-5" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">5. Storage & retention</a>
+                        <a href="#section-6" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">6. Deleting your data</a>
+                        <a href="#section-7" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">7. Children's privacy</a>
+                        <a href="#section-8" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">8. Changes to this policy</a>
+                        <a href="#section-9" class="toc-link block py-1.5 px-2 rounded-md hover:text-emerald-600 transition-colors">9. Contact</a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Privacy Content Main Area -->
+            <main class="lg:col-span-3 bg-white p-6 sm:p-10 rounded-2xl border border-slate-200/80 shadow-sm space-y-10">
+                
+                <!-- Hero Header -->
+                <div class="border-b border-slate-100 pb-8 space-y-4">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Effective and last updated: August 14, 2026
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Privacy Policy</h1>
+                    <p class="text-slate-600 text-base sm:text-lg leading-relaxed pt-2">
+                        This page explains what Recipe Genie collects, why, and how you're in control of it. We built the app around one rule: <strong class="text-slate-900 font-semibold underline decoration-emerald-400 decoration-2 underline-offset-2">your recipes and account data are yours, scoped to you alone, and never sold.</strong>
+                    </p>
+                </div>
+
+                <!-- Mobile Navigation Widget -->
+                <div class="lg:hidden bg-slate-50 p-5 rounded-xl border border-slate-200/80">
+                    <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-500 mb-3">On this page</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-emerald-600 font-medium">
+                        <a href="#section-1" class="hover:underline">1. Information we collect</a>
+                        <a href="#section-2" class="hover:underline">2. How we use it</a>
+                        <a href="#section-3" class="hover:underline">3. Who else sees it</a>
+                        <a href="#section-4" class="hover:underline">4. Device permissions</a>
+                        <a href="#section-5" class="hover:underline">5. Storage & retention</a>
+                        <a href="#section-6" class="hover:underline">6. Deleting your data</a>
+                        <a href="#section-7" class="hover:underline">7. Children's privacy</a>
+                        <a href="#section-8" class="hover:underline">8. Changes to this policy</a>
+                        <a href="#section-9" class="hover:underline">9. Contact</a>
+                    </div>
+                </div>
+
+                <!-- Section 1 -->
+                <section id="section-1" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">01</span>
+                        Information we collect
+                    </h2>
+                    <p class="text-slate-600">We collect only what the app needs to function. That's:</p>
+                    
+                    <div class="grid grid-cols-1 gap-3 pt-2">
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                            <span class="font-semibold text-slate-900 block text-sm">Account info</span>
+                            <span class="text-slate-600 text-sm">The email address and password you sign up with, or your Google account email if you use "Continue with Google."</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                            <span class="font-semibold text-slate-900 block text-sm">Profile info</span>
+                            <span class="text-slate-600 text-sm">The display name you choose, and a profile photo if you upload one.</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                            <span class="font-semibold text-slate-900 block text-sm">Recipe content</span>
+                            <span class="text-slate-600 text-sm">Recipes you save, whether pasted in as a link (we fetch and process that page/video, see §3) or typed in yourself, along with any collections you organize them into.</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                            <span class="font-semibold text-slate-900 block text-sm">Meal schedule</span>
+                            <span class="text-slate-600 text-sm">Dates, times, and reminder preferences for meals you schedule, plus optional notes you add.</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                            <span class="font-semibold text-slate-900 block text-sm">Usage-necessary technical data</span>
+                            <span class="text-slate-600 text-sm">Things like device notification and calendar identifiers, kept only so a reminder or calendar event you created can later be updated or cancelled.</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-xl mt-4">
+                        <div class="flex gap-3">
+                            <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <p class="text-sm text-amber-900">
+                                We do not collect location data, contacts, browsing history outside the app, or advertising identifiers, and Recipe Genie contains no ad network or analytics tracker.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 2 -->
+                <section id="section-2" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">02</span>
+                        How we use it
+                    </h2>
+                    <p class="text-slate-600">In short: to run the app you're using, and nothing beyond that.</p>
+                    
+                    <ul class="space-y-3 pt-2">
+                        <li class="flex items-start gap-3 text-slate-700 text-sm">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">✓</div>
+                            <span>Authenticate you and keep your data scoped only to your own account.</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-slate-700 text-sm">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">✓</div>
+                            <span>Extract recipes from a link you paste — the page or video's text is analyzed to pull out ingredients, steps, and timing.</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-slate-700 text-sm">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">✓</div>
+                            <span>Generate suggestions you explicitly ask for — a lighter version of a recipe, or a 7-day meal plan built from what you've saved.</span>
+                        </li>
+                        <li class="flex items-start gap-3 text-slate-700 text-sm">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">✓</div>
+                            <span>Send reminders at the cooking-start time you set, and add the matching event to your device calendar if you choose to schedule a meal.</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 3 -->
+                <section id="section-3" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">03</span>
+                        Who else sees it
+                    </h2>
+                    <p class="text-slate-600">
+                        We use two service providers to run Recipe Genie. Neither is permitted to use your data for their own purposes, and neither receives more than the specific request needs.
+                    </p>
+                    
+                    <div class="overflow-hidden border border-slate-200/80 rounded-2xl shadow-sm mt-4">
+                        <table class="w-full text-left text-sm text-slate-700">
+                            <thead class="bg-slate-50 text-slate-900 font-semibold text-xs border-b border-slate-200">
+                                <tr>
+                                    <th scope="col" class="px-5 py-3.5">Provider</th>
+                                    <th scope="col" class="px-5 py-3.5">What they receive</th>
+                                    <th scope="col" class="px-5 py-3.5">Why</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-5 py-4 font-bold text-slate-900 flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        Supabase
+                                    </td>
+                                    <td class="px-5 py-4 text-slate-600">Your account details and all app data (recipes, collections, schedules)</td>
+                                    <td class="px-5 py-4 text-slate-600">Hosts our database, authentication, and file storage</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="px-5 py-4 font-bold text-slate-900 flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                                        OpenAI
+                                    </td>
+                                    <td class="px-5 py-4 text-slate-600">The text of a page/video you ask us to import, or a recipe you ask us to adapt or plan around</td>
+                                    <td class="px-5 py-4 text-slate-600">Powers recipe extraction, the "make it healthy" rewrite, and meal planning</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="text-slate-600 text-sm pt-1">
+                        We don't sell your data, and we don't share it with data brokers or advertisers.
+                    </p>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 4 -->
+                <section id="section-4" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">04</span>
+                        Device permissions
+                    </h2>
+                    <p class="text-slate-600">Recipe Genie asks for a few device permissions, each tied to a feature you choose to use:</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                        <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                                🔔
+                            </div>
+                            <span class="font-bold text-slate-900 block text-sm">Notifications</span>
+                            <span class="text-slate-600 text-xs block leading-relaxed">To send you the "start cooking" reminder for a meal you've scheduled.</span>
+                        </div>
+                        <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2">
+                            <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center">
+                                📅
+                            </div>
+                            <span class="font-bold text-slate-900 block text-sm">Calendar</span>
+                            <span class="text-slate-600 text-xs block leading-relaxed">To add a cooking-to-eating event when you schedule a meal, and remove it if you cancel.</span>
+                        </div>
+                        <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                                🖼️
+                            </div>
+                            <span class="font-bold text-slate-900 block text-sm">Photo library</span>
+                            <span class="text-slate-600 text-xs block leading-relaxed">Only if you choose to set a profile picture.</span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-500 italic pt-1">
+                        None of these are required to use the core app — you can save, browse, and cook from recipes without granting any of them.
+                    </p>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 5 -->
+                <section id="section-5" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">05</span>
+                        Storage & retention
+                    </h2>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+                        Your data is stored in our Supabase project's database and file storage, protected by row-level security so that only your own account can read or write it. We retain it for as long as your account exists. Notification and calendar entries created on your device stay there until the corresponding scheduled meal is completed or cancelled.
+                    </p>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 6 -->
+                <section id="section-6" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">06</span>
+                        Deleting your data
+                    </h2>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+                        You can delete individual recipes, collections, and scheduled meals directly in the app at any time — this removes them immediately, along with any related reminder or calendar entry.
+                    </p>
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <span class="font-bold text-slate-900 block text-sm">Deleting your whole account</span>
+                            <span class="text-slate-600 text-xs">Email us from the address on your account and we'll erase your account and all associated data within 30 days.</span>
+                        </div>
+                        <button onclick="copySupportEmail()" class="inline-flex items-center justify-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap">
+                            kevin@viralinbound.com
+                        </button>
+                    </div>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 7 -->
+                <section id="section-7" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">07</span>
+                        Children's privacy
+                    </h2>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+                        Recipe Genie isn't directed at children, and we don't knowingly collect information from anyone under 13. If you believe a child has created an account, contact us and we'll remove it.
+                    </p>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 8 -->
+                <section id="section-8" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">08</span>
+                        Changes to this policy
+                    </h2>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+                        If this policy changes in a way that affects how your data is handled, we'll update the date at the top of this page. Material changes will also be noted in-app.
+                    </p>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 9 -->
+                <section id="section-9" class="scroll-mt-24 space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-emerald-600 text-sm font-semibold px-2 py-0.5 bg-emerald-50 rounded">09</span>
+                        Contact
+                    </h2>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+                        Questions about this policy or your data — reach us at:
+                    </p>
+                    <a href="mailto:kevin@viralinbound.com" class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-semibold text-base underline decoration-emerald-300 underline-offset-4">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        kevin@viralinbound.com
+                    </a>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-500 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 space-y-2">
+            <p class="font-semibold text-slate-700">Recipe Genie</p>
+            <p class="max-w-xl mx-auto leading-relaxed">This policy applies to the Recipe Genie mobile app and covers the data practices described above as implemented in the app's source.</p>
+            <p class="text-slate-400 pt-2">© 2026 Recipe Genie. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Interactive Scripts -->
+    <script>
+        // Copy Email to Clipboard helper
+        function copySupportEmail() {
+            const email = "kevin@viralinbound.com";
+            
+            // iFrame safe fallback
+            const tempInput = document.createElement("input");
+            tempInput.value = email;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+
+            showToast("Copied " + email + " to clipboard!");
+        }
+
+        // Custom Toast Notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.textContent = message;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Active Table of Contents highlighting on Scroll
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('#desktop-toc .toc-link');
+
+            function highlightNav() {
+                let scrollY = window.pageYOffset;
+
+                sections.forEach(current => {
+                    const sectionHeight = current.offsetHeight;
+                    const sectionTop = current.offsetTop - 120;
+                    const sectionId = current.getAttribute('id');
+
+                    if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === '#' + sectionId) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', highlightNav);
+            highlightNav();
+        });
+    </script>
+</body>
+</html>
