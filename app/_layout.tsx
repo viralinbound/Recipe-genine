@@ -1,14 +1,18 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from "expo-splash-screen";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Alert, Platform, LogBox } from "react-native";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { getOnboardingComplete } from "@/lib/onboardingStorage";
+import { ensureNotificationPermission } from "@/lib/notifications";
+import { getNotificationPrompted, setNotificationPrompted } from "@/lib/notificationPromptStorage";
+
+LogBox.ignoreLogs(["Cannot connect to Expo CLI"]);
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -19,29 +23,34 @@ function useProtectedRoute() {
   const { onboardingComplete, setOnboardingComplete } = useAuthStore();
   const onboardingChecked = onboardingComplete !== null;
   const onboardingDone = onboardingComplete === true;
+  const [notificationPrompted, setNotificationPromptedState] = useState<boolean | null>(null);
 
   useEffect(() => {
-    SecureStore.getItemAsync("onboarding_complete")
-      .then((val) => {
-        console.log("[DBG] SecureStore onboarding_complete=", val);
-        setOnboardingComplete(val === "true");
+    getOnboardingComplete()
+      .then((complete) => {
+        setOnboardingComplete(complete);
       })
       .catch((e) => {
-        console.log("[DBG] SecureStore error", String(e));
+        console.log("[DBG] onboarding storage error", String(e));
         setOnboardingComplete(false);
       });
   }, []);
 
-  console.log("[DBG] state", { initializing, onboardingComplete });
+  useEffect(() => {
+    getNotificationPrompted()
+      .then((prompted) => {
+        setNotificationPromptedState(prompted);
+      })
+      .catch(() => {
+        setNotificationPromptedState(false);
+      });
+  }, []);
 
   useEffect(() => {
     if (initializing || !onboardingChecked) return;
 
     const inAuthGroup = segments[0] === "(auth)";
     const onOnboarding = segments[0] === "onboarding";
-    // The password-recovery deep link (recipegenie://auth/reset-password)
-    // lands here with no session yet — it establishes one itself from the
-    // link's tokens, so it must be reachable without being signed in first.
     const onPasswordReset = segments[0] === "auth";
 
     if (!onboardingDone && !onOnboarding && !onPasswordReset) {
@@ -59,8 +68,46 @@ function useProtectedRoute() {
       return;
     }
 
-    SplashScreen.hideAsync().catch(() => {});
+    setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 4000);
   }, [isAuthenticated, initializing, segments, onboardingChecked, onboardingDone]);
+
+  // First install / first login: explain then ask for notification permission
+  useEffect(() => {
+    if (initializing || !onboardingChecked) return;
+    if (notificationPrompted === null) return;
+    if (!onboardingDone || !isAuthenticated || notificationPrompted) return;
+    if (Platform.OS === "web") {
+      setNotificationPromptedState(true);
+      setNotificationPrompted().catch(() => {});
+      return;
+    }
+
+    Alert.alert(
+      "Allow meal reminders?",
+      "Recipe Genie can notify you when it's time to start cooking so your meals are ready on time.",
+      [
+        {
+          text: "Not now",
+          style: "cancel",
+          onPress: async () => {
+            await setNotificationPrompted().catch(() => {});
+            setNotificationPromptedState(true);
+          },
+        },
+        {
+          text: "Allow",
+          onPress: async () => {
+            await ensureNotificationPermission().catch(() => {});
+            await setNotificationPrompted().catch(() => {});
+            setNotificationPromptedState(true);
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  }, [initializing, onboardingChecked, onboardingDone, isAuthenticated, notificationPrompted]);
 
   return { ready: !initializing && onboardingChecked };
 }
@@ -81,6 +128,7 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       <Stack.Screen name="auth/reset-password" options={{ headerShown: true, title: "" }} />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="recipe/[id]" options={{ headerShown: true, title: "" }} />

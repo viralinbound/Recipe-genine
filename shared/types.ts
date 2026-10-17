@@ -1,4 +1,10 @@
-export type SourceType = "youtube" | "instagram" | "blog" | "manual";
+export type SourceType =
+  | "youtube"
+  | "instagram"
+  | "tiktok"
+  | "facebook"
+  | "blog"
+  | "manual";
 
 export interface Ingredient {
   item: string;
@@ -97,5 +103,7 @@ export interface ScheduledMeal {
   notification_id: string | null;
   calendar_event_id: string | null;
   notes: string | null;
+  /** Breakfast | Lunch | Snack | Dinner when set */
+  meal_type?: string | null;
   created_at: string;
 }

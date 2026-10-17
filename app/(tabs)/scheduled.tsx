@@ -46,6 +46,11 @@ export default function Scheduled() {
           <Text numberOfLines={1} style={styles.rowTitle}>
             {item.recipe_title}
           </Text>
+          {!!item.meal_type && (
+            <View style={styles.mealBadge}>
+              <Text style={styles.mealBadgeText}>{item.meal_type}</Text>
+            </View>
+          )}
           <View style={styles.rowMeta}>
             <Clock size={12} color="#8A7A6C" />
             <Text style={styles.rowMetaText}>Start cooking {formatDateTime(item.start_cooking_time)}</Text>
@@ -116,6 +121,15 @@ const styles = StyleSheet.create({
     borderColor: "#EFE2D6",
   },
   rowTitle: { fontSize: 15, fontWeight: "600", color: "#2B2118", marginBottom: 4 },
+  mealBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FDE6DD",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 4,
+  },
+  mealBadgeText: { fontSize: 11, fontWeight: "700", color: "#B7482E" },
   rowMeta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   rowMetaText: { fontSize: 12, color: "#8A7A6C" },
   notesText: { fontSize: 12, color: "#8A6558", fontStyle: "italic", marginTop: 4 },

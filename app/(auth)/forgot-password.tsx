@@ -36,7 +36,7 @@ export default function ForgotPassword() {
       </TouchableOpacity>
       <Text style={styles.title}>Reset your password</Text>
       <Text style={styles.subtitle}>
-        We'll email you a link to set a new password.
+        We'll email you a link. Open it on your phone — Recipe Genie will open so you can set a full new password.
       </Text>
       <TextInput
         style={styles.input}

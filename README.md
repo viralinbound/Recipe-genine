@@ -118,20 +118,19 @@ submitting to App Store Connect.
 
 1. App calls the `import-recipe` Edge Function with the user's JWT + the pasted URL.
 2. Function verifies the user via Supabase auth.
-3. YouTube links → oEmbed + a best-effort scrape of the video description.
-   Blog/Instagram links → fetches the page, prefers `@type: Recipe` JSON-LD if present,
-   otherwise falls back to stripped body text (truncated to stay under token limits).
-4. Sends the extracted text to `gpt-4o-mini` in JSON mode (`max_tokens: 4096`).
-5. Repairs truncated JSON via bracket balancing if the model got cut off.
-6. If the model returns `{"error": "no_recipe"}`, the app shows a friendly "this doesn't
-   look like a recipe page" message.
-7. Otherwise the recipe is inserted into `recipes` and the app navigates to the detail screen.
+3. **Detect source** — YouTube / Shorts, Instagram, TikTok, Facebook, or blog.
+4. **Analyze video/page content**:
+   - YouTube → oEmbed + description + full caption transcript (HTML captionTracks + timedtext fallbacks).
+   - TikTok → oEmbed + OG/caption metadata.
+   - Instagram / Facebook / blogs → page scrape, preferring `@type: Recipe` JSON-LD when present.
+5. Sends extracted content to `gpt-4o-mini` in JSON mode. If captions are thin, the video thumbnail is also sent so vision can help identify the dish.
+6. Culinary inference fills missing measurements so food shorts still produce a complete cookable recipe.
+7. Recipe is inserted into `recipes` and the app opens the detail screen.
 
-## Known limitations (carried over from the spec)
+## Known limitations
 
-- YouTube import relies on the video description, not a real transcript — some videos won't
-  have enough text for a good extraction.
-- TikTok is intentionally not a supported import source.
+- Platforms that block scraping (some Instagram/Facebook posts) may only yield title/thumbnail — the model still generates a recipe from the dish name + image.
+- True frame-by-frame video download/Whisper transcription is not used in the Edge Function (serverless constraint); YouTube uses captions when available.
 - `Loader2`-style CSS spin animations don't work on native — screens use `ActivityIndicator`
   instead.
 

@@ -15,7 +15,26 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "viralinbound@gmail.com",
+        "ascAppId": "6808203289",
+        "appleTeamId": "8J6VJ5KG7A"
+      }
     }
   }
 }

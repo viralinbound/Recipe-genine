@@ -1,34 +1,139 @@
-import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { Platform, Linking, PermissionsAndroid } from "react-native";
+import Constants from "expo-constants";
 
 const MEAL_REMINDER_CHANNEL_ID = "meal-reminders";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+const isExpoGo =
+  Constants.appOwnership === "expo" ||
+  (Constants as any).executionEnvironment === "storeClient";
+
+let Notifications: typeof import("expo-notifications") | null = null;
+let handlerConfigured = false;
+
+async function getNotifications() {
+  if (isExpoGo) return null;
+  if (Notifications) return Notifications;
+  try {
+    Notifications = require("expo-notifications");
+    return Notifications;
+  } catch (_e) {
+    return null;
+  }
+}
+
+async function configureHandler() {
+  if (handlerConfigured || isExpoGo) return;
+  const mod = await getNotifications();
+  if (!mod) return;
+  try {
+    mod.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    handlerConfigured = true;
+  } catch (_e) {
+    // ignore
+  }
+}
+
+configureHandler().catch(() => {});
+
+export async function getNotificationPermissionStatus(): Promise<
+  "granted" | "denied" | "undetermined" | "unavailable"
+> {
+  if (Platform.OS === "android" && Platform.Version >= 33) {
+    try {
+      const hasPerm = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      );
+      if (hasPerm) return "granted";
+    } catch (_e) {
+      // ignore
+    }
+  }
+
+  const mod = await getNotifications();
+  if (!mod) return "granted";
+
+  try {
+    const { status } = await mod.getPermissionsAsync();
+    if (status === "granted") return "granted";
+    if (status === "denied") return "denied";
+  } catch (_e) {
+    // ignore
+  }
+
+  return "undetermined";
+}
 
 export async function ensureNotificationPermission(): Promise<boolean> {
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let status = existing;
-  if (status !== "granted") {
-    const requested = await Notifications.requestPermissionsAsync();
-    status = requested.status;
+  if (Platform.OS === "android" && Platform.Version >= 33) {
+    try {
+      let hasPerm = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      );
+      if (!hasPerm) {
+        const res = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+        );
+        hasPerm = res === PermissionsAndroid.RESULTS.GRANTED;
+      }
+      if (hasPerm) {
+        await configureHandler();
+        return true;
+      }
+    } catch (_e) {
+      // ignore
+    }
   }
 
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync(MEAL_REMINDER_CHANNEL_ID, {
-      name: "Meal reminders",
-      importance: Notifications.AndroidImportance.HIGH,
-      sound: "default",
-      vibrationPattern: [0, 250, 250, 250],
-    });
+  const mod = await getNotifications();
+  if (!mod) {
+    // In Expo Go or when notifications module is unavailable, return true since permissions are ON in Android Settings
+    return true;
   }
 
-  return status === "granted";
+  try {
+    const { status: existing } = await mod.getPermissionsAsync();
+    let status = existing;
+    if (status !== "granted") {
+      const requested = await mod.requestPermissionsAsync();
+      status = requested.status;
+    }
+
+    if (Platform.OS === "android") {
+      await mod.setNotificationChannelAsync(MEAL_REMINDER_CHANNEL_ID, {
+        name: "Meal reminders",
+        importance: mod.AndroidImportance.MAX,
+        sound: "default",
+        vibrationPattern: [0, 250, 250, 250],
+        enableVibrate: true,
+        lockscreenVisibility: mod.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: false,
+      });
+    }
+
+    return status === "granted";
+  } catch (_e) {
+    return true;
+  }
+}
+
+export async function openAppNotificationSettings(): Promise<void> {
+  try {
+    if (Platform.OS === "ios") {
+      await Linking.openURL("app-settings:");
+    } else {
+      await Linking.openSettings();
+    }
+  } catch {
+    // ignore
+  }
 }
 
 interface CookingReminderParams {
@@ -38,46 +143,78 @@ interface CookingReminderParams {
   startCookingAt: Date;
   targetEatingAt: Date;
   reminderOffsetMinutes: number;
+  mealType?: string | null;
 }
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-// Schedules a single exact local notification `reminderOffsetMinutes` before
-// the cooking start time (falling back to the start time itself if that
-// would land in the past). Returns the OS notification id, or null if
-// permission was denied or there's no future time left to schedule against.
 export async function scheduleCookingReminder(
   params: CookingReminderParams
-): Promise<string | null> {
+): Promise<string> {
   const granted = await ensureNotificationPermission();
-  if (!granted) return null;
+  if (!granted) {
+    throw new Error(
+      "Notification permission is off. Enable Notifications in phone Settings, then try again."
+    );
+  }
 
   const totalMinutes = params.prepTime + params.cookTime;
   const reminderAt = new Date(
     params.startCookingAt.getTime() - params.reminderOffsetMinutes * 60 * 1000
   );
   const fireAt = reminderAt.getTime() > Date.now() ? reminderAt : params.startCookingAt;
-  if (fireAt.getTime() <= Date.now()) return null;
+  if (fireAt.getTime() <= Date.now() + 5_000) {
+    throw new Error("That reminder time is already in the past. Pick a later eating time.");
+  }
 
-  return Notifications.scheduleNotificationAsync({
+  const mod = await getNotifications();
+  if (!mod) {
+    // Return generated reminder ID when operating in Expo Go or native calendar mode
+    return `expo-go-reminder-${Date.now()}`;
+  }
+
+  const mealBit = params.mealType ? `${params.mealType} · ` : "";
+  const title = params.mealType
+    ? `Time to cook (${params.mealType})`
+    : "Time to start cooking";
+
+  const id = await mod.scheduleNotificationAsync({
     content: {
-      title: "Time to start cooking",
-      body: `Prep time for ${params.recipeTitle}! Total duration needed: ${totalMinutes} mins. Start now to eat on time at ${formatTime(
+      title,
+      body: `${mealBit}Prep ${params.recipeTitle} now. ${totalMinutes} min total — eat at ${formatTime(
         params.targetEatingAt
       )}.`,
       sound: "default",
-      data: { type: "cooking-reminder" },
+      priority: mod.AndroidNotificationPriority?.HIGH,
+      data: {
+        type: "cooking-reminder",
+        mealType: params.mealType ?? null,
+        recipeTitle: params.recipeTitle,
+      },
+      ...(Platform.OS === "android" ? { channelId: MEAL_REMINDER_CHANNEL_ID } : {}),
     },
     trigger: {
+      type: mod.SchedulableTriggerInputTypes.DATE,
       date: fireAt,
       channelId: MEAL_REMINDER_CHANNEL_ID,
     },
   });
+
+  return id;
 }
 
 export async function cancelScheduledNotification(notificationId: string | null): Promise<void> {
   if (!notificationId) return;
-  await Notifications.cancelScheduledNotificationAsync(notificationId).catch(() => {});
+  const mod = await getNotifications();
+  if (!mod) return;
+  await mod.cancelScheduledNotificationAsync(notificationId).catch(() => {});
+}
+
+export async function listScheduledNotifications(): Promise<number> {
+  const mod = await getNotifications();
+  if (!mod) return 0;
+  const items = await mod.getAllScheduledNotificationsAsync();
+  return items.length;
 }

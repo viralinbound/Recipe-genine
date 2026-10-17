@@ -10,10 +10,10 @@ import {
   NativeScrollEvent,
 } from "react-native";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { Link2, Sparkles, BookOpen } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
+import { setOnboardingComplete as persistOnboardingComplete } from "@/lib/onboardingStorage";
 
 const SLIDES = [
   {
@@ -41,7 +41,7 @@ export default function Onboarding() {
   const setOnboardingComplete = useAuthStore((s) => s.setOnboardingComplete);
 
   const finish = async () => {
-    await SecureStore.setItemAsync("onboarding_complete", "true");
+    await persistOnboardingComplete();
     setOnboardingComplete(true);
     router.replace("/(auth)/login");
   };

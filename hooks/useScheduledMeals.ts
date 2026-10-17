@@ -30,6 +30,7 @@ interface ScheduleMealInput {
   targetEatingTime: Date;
   reminderOffsetMinutes: number;
   notes?: string;
+  mealType?: string | null;
 }
 
 export function useScheduleMeal() {
@@ -62,13 +63,15 @@ export function useScheduleMeal() {
         startCookingAt: startCookingTime,
         targetEatingAt: input.targetEatingTime,
         reminderOffsetMinutes: input.reminderOffsetMinutes,
+        mealType: input.mealType ?? null,
       });
 
       const calendarEventId = await addMealCalendarEvent({
-        title: `Cook: ${input.recipe.title}`,
+        title: `Cook${input.mealType ? ` (${input.mealType})` : ""}: ${input.recipe.title}`,
         startAt: startCookingTime,
         endAt: input.targetEatingTime,
         notes: [
+          input.mealType ? `Meal: ${input.mealType}` : null,
           `Prep ${prepTime} min + cook ${cookTime} min. Scheduled from Recipe Genie.`,
           input.notes?.trim(),
         ]
@@ -76,28 +79,35 @@ export function useScheduleMeal() {
           .join("\n\n"),
       });
 
-      const { data, error } = await supabase
+      const baseRow = {
+        user_id: userId,
+        recipe_id: input.recipe.id,
+        recipe_title: input.recipe.title,
+        scheduled_date: input.scheduledDate.toISOString().slice(0, 10),
+        prep_time: prepTime,
+        cook_time: cookTime,
+        start_cooking_time: startCookingTime.toISOString(),
+        target_eating_time: input.targetEatingTime.toISOString(),
+        reminder_offset: input.reminderOffsetMinutes,
+        notification_id: notificationId,
+        calendar_event_id: calendarEventId,
+        notes: input.notes?.trim() || null,
+      };
+
+      let { data, error } = await supabase
         .from("scheduled_meals")
-        .insert({
-          user_id: userId,
-          recipe_id: input.recipe.id,
-          recipe_title: input.recipe.title,
-          scheduled_date: input.scheduledDate.toISOString().slice(0, 10),
-          prep_time: prepTime,
-          cook_time: cookTime,
-          start_cooking_time: startCookingTime.toISOString(),
-          target_eating_time: input.targetEatingTime.toISOString(),
-          reminder_offset: input.reminderOffsetMinutes,
-          notification_id: notificationId,
-          calendar_event_id: calendarEventId,
-          notes: input.notes?.trim() || null,
-        })
+        .insert({ ...baseRow, meal_type: input.mealType ?? null })
         .select()
         .single();
 
+      // Older DBs without meal_type column — retry without it.
+      if (error && /meal_type|column/i.test(error.message || "")) {
+        const retry = await supabase.from("scheduled_meals").insert(baseRow).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) {
-        // Roll back the side effects we already committed so we don't leave
-        // a dangling notification/calendar event with no DB record.
         await cancelScheduledNotification(notificationId);
         await removeMealCalendarEvent(calendarEventId);
         throw error;

@@ -84,3 +84,22 @@ export function useSaveRecipe() {
     },
   });
 }
+
+export function useUpdateRecipeTags() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, tags }: { id: string; tags: string[] }) => {
+      const { data, error } = await supabase
+        .from("recipes")
+        .update({ tags })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Recipe;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: RECIPES_KEY });
+    },
+  });
+}

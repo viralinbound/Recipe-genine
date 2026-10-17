@@ -27,7 +27,10 @@ import type { Collection } from "@/shared/types";
 const SOURCE_ICON: Record<string, any> = {
   youtube: Youtube,
   instagram: Instagram,
+  tiktok: Globe,
+  facebook: Globe,
   blog: Globe,
+  manual: Globe,
 };
 
 export default function RecipeDetail() {

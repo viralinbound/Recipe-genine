@@ -13,6 +13,7 @@ import {
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
+import { Eye, EyeOff } from "lucide-react-native";
 
 export default function Signup() {
   const { signUpWithEmail } = useAuth();
@@ -20,11 +21,18 @@ export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignup = async () => {
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !confirmPassword) {
       Alert.alert("Missing info", "Fill in all fields.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert("Passwords mismatch", "Please ensure your passwords match.");
       return;
     }
     if (password.length < 6) {
@@ -36,11 +44,19 @@ export default function Signup() {
       await signUpWithEmail(email.trim(), password, name.trim());
       Alert.alert(
         "Check your email",
-        "Confirm your address to finish signing up, then log in.",
+        "Tap the confirmation link on this phone — Recipe Genie will open and finish signup.",
         [{ text: "OK", onPress: () => router.replace("/(auth)/login") }]
       );
     } catch (e: any) {
-      Alert.alert("Sign up failed", e.message ?? "Something went wrong.");
+      const msg = e.message?.toLowerCase() || "";
+      if (msg.includes("already registered") || msg.includes("already in use")) {
+        Alert.alert(
+          "Account exists", 
+          "An account with this email already exists. Please go to Login instead."
+        );
+      } else {
+        Alert.alert("Sign up failed", e.message ?? "Something went wrong.");
+      }
     } finally {
       setLoading(false);
     }
@@ -75,14 +91,48 @@ export default function Signup() {
             value={email}
             onChangeText={setEmail}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#A9998A"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              placeholderTextColor="#A9998A"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity 
+              style={styles.eyeIcon} 
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff color="#A9998A" size={20} />
+              ) : (
+                <Eye color="#A9998A" size={20} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Confirm Password"
+              placeholderTextColor="#A9998A"
+              secureTextEntry={!showConfirmPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+            <TouchableOpacity 
+              style={styles.eyeIcon} 
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeOff color="#A9998A" size={20} />
+              ) : (
+                <Eye color="#A9998A" size={20} />
+              )}
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={[styles.button, loading && { opacity: 0.6 }]}
@@ -122,6 +172,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EFE2D6",
     color: "#2B2118",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#EFE2D6",
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#2B2118",
+  },
+  eyeIcon: {
+    padding: 14,
   },
   button: {
     backgroundColor: "#E85D3F",

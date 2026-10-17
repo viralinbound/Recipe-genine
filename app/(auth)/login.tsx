@@ -13,6 +13,7 @@ import {
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
+import { Eye, EyeOff } from "lucide-react-native";
 
 export default function Login() {
   const { signInWithEmail, signInWithGoogle } = useAuth();
@@ -20,6 +21,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -31,7 +33,15 @@ export default function Login() {
       await signInWithEmail(email.trim(), password);
       router.replace("/(tabs)");
     } catch (e: any) {
-      Alert.alert("Login failed", e.message ?? "Something went wrong.");
+      const msg = e.message?.toLowerCase() || "";
+      if (msg.includes("invalid login credentials")) {
+        Alert.alert(
+          "Login Failed",
+          "Account not found or incorrect password. If you don't have an account, please sign up!"
+        );
+      } else {
+        Alert.alert("Login failed", e.message ?? "Something went wrong.");
+      }
     } finally {
       setLoading(false);
     }
@@ -67,14 +77,26 @@ export default function Login() {
             value={email}
             onChangeText={setEmail}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#A9998A"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              placeholderTextColor="#A9998A"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity 
+              style={styles.eyeIcon} 
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff color="#A9998A" size={20} />
+              ) : (
+                <Eye color="#A9998A" size={20} />
+              )}
+            </TouchableOpacity>
+          </View>
 
           <Link href="/(auth)/forgot-password" asChild>
             <TouchableOpacity>
@@ -93,6 +115,7 @@ export default function Login() {
           <TouchableOpacity style={styles.googleButton} onPress={handleGoogle}>
             <Text style={styles.googleButtonText}>Continue with Google</Text>
           </TouchableOpacity>
+
         </View>
 
         <View style={styles.footer}>
@@ -124,6 +147,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EFE2D6",
     color: "#2B2118",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#EFE2D6",
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#2B2118",
+  },
+  eyeIcon: {
+    padding: 14,
   },
   link: { color: "#E85D3F", fontSize: 14, textAlign: "right", marginBottom: 4 },
   button: {

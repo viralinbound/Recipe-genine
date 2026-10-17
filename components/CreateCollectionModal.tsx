@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Modal, View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { useCreateCollection } from "@/hooks/useCollections";
 import type { Collection } from "@/shared/types";
+import BottomSheet from "@/components/BottomSheet";
 
 const EMOJI_OPTIONS = ["📁", "🍝", "🥗", "🍰", "🍳", "🌮", "🍲", "🥘"];
 
@@ -38,18 +39,19 @@ export default function CreateCollectionModal({ visible, onClose, onCreated }: P
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <Text style={styles.title}>New collection</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Weeknight dinners"
-            placeholderTextColor="#A9998A"
-            value={name}
-            onChangeText={setName}
-            autoFocus
-          />
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text style={styles.title}>New collection</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="e.g. Weeknight dinners"
+        placeholderTextColor="#A9998A"
+        value={name}
+        onChangeText={setName}
+        autoFocus
+        returnKeyType="done"
+        blurOnSubmit
+        onSubmitEditing={handleCreate}
+      />
           <View style={styles.emojiRow}>
             {EMOJI_OPTIONS.map((e) => (
               <TouchableOpacity
@@ -81,15 +83,11 @@ export default function CreateCollectionModal({ visible, onClose, onCreated }: P
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(43,33,24,0.4)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#FFF8F0", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   title: { fontSize: 18, fontWeight: "800", color: "#2B2118", marginBottom: 16 },
   input: {
     backgroundColor: "#fff",

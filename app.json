@@ -3,14 +3,14 @@
     "name": "Recipe Genie",
     "slug": "recipe-genie",
     "scheme": "recipegenie",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "version": "2.0.0",
+    "orientation": "default",
+    "icon": "./assets/chef-icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/chef-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFF8F0"
+      "backgroundColor": "#FFF7EB"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,26 +18,66 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.recipegenie.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCalendarsUsageDescription": "Recipe Genie adds a calendar event when you schedule a meal, spanning cooking start to eating time."
+        "NSCalendarsUsageDescription": "Recipe Genie adds a calendar event when you schedule a meal, spanning cooking start to eating time.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "recipegenie"
+            ]
+          }
+        ]
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFF8F0"
+        "foregroundImage": "./assets/chef-icon.png",
+        "backgroundColor": "#FFF7EB"
       },
       "package": "dev.recipegenie.app",
+      "versionCode": 3,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.USE_EXACT_ALARM",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.READ_CALENDAR",
-        "android.permission.WRITE_CALENDAR"
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "recipegenie",
+              "host": "auth",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "recipegenie"
+            }
+          ]
+        }
       ]
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/chef-icon.png",
+          "backgroundColor": "#FFF7EB",
+          "resizeMode": "contain"
+        }
+      ],
       "expo-router",
       "expo-secure-store",
       [
@@ -49,7 +89,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/chef-icon.png",
           "color": "#E85D3F"
         }
       ],
@@ -65,8 +105,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "5c0c8406-f7a8-414b-b792-f04b8cd77b6b"
+        "projectId": "92792374-cc25-4e9f-92f1-f92cd48e1358"
       }
-    }
+    },
+    "owner": "gunanit"
   }
 }

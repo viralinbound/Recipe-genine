@@ -19,3 +19,19 @@ web-build/
 # Editor/agent tooling, not project source
 .claude/
 %ProgramData%/
+
+# added before public push
+*.pem
+*.jks
+*.keystore
+*.key
+*.apk
+*.aab
+*.zip
+*.log
+unzipped_*/
+.claude/
+
+
+supabase/.temp/
+.idea/caches/

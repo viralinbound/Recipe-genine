@@ -13,12 +13,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Calendar, type DateData } from "react-native-calendars";
-import { Clock, Bell, Minus, Plus, Search, Link2, ChevronLeft } from "lucide-react-native";
+import { Clock, Bell, Minus, Plus, Search, Link2, ChevronLeft, CheckSquare, Square } from "lucide-react-native";
 import { useRecipe, useRecipes } from "@/hooks/useRecipes";
 import { useImportRecipe } from "@/hooks/useImport";
 import { useScheduleMeal } from "@/hooks/useScheduledMeals";
 import IconButton from "@/components/IconButton";
 import type { Recipe } from "@/shared/types";
+import {
+  MEAL_TYPES,
+  mealTimeFromDefaults,
+  type MealType,
+} from "@/shared/categories";
+import { ensureNotificationPermission } from "@/lib/notifications";
 
 function toDateKey(date: Date): string {
   const y = date.getFullYear();
@@ -46,12 +52,27 @@ function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-// How many dates a single schedule action can cover at once — keeps the
-// number of notifications/calendar events/DB rows created in one tap sane.
 const MAX_SELECTABLE_DATES = 14;
 
+type MealTimes = Record<MealType, Date>;
+/** Per date: which meal slots are enabled for that date. */
+type DateMeals = Record<string, MealType[]>;
+
+function defaultMealTimes(): MealTimes {
+  return {
+    Breakfast: mealTimeFromDefaults("Breakfast"),
+    Lunch: mealTimeFromDefaults("Lunch"),
+    Snack: mealTimeFromDefaults("Snack"),
+    Dinner: mealTimeFromDefaults("Dinner"),
+  };
+}
+
 export default function ScheduleMeal() {
-  const { id, date: prefillDate } = useLocalSearchParams<{ id: string; date?: string }>();
+  const { id, date: prefillDate, meal: prefillMeal } = useLocalSearchParams<{
+    id: string;
+    date?: string;
+    meal?: string;
+  }>();
   const router = useRouter();
   const isNew = id === "new";
 
@@ -66,43 +87,56 @@ export default function ScheduleMeal() {
 
   const scheduleMeal = useScheduleMeal();
 
-  // Arriving from the Meal Planner passes ?date=YYYY-MM-DD for the day the
-  // AI plan had this meal on — preselect it so the user doesn't re-pick it.
+  const initialMeal =
+    prefillMeal && MEAL_TYPES.includes(prefillMeal as MealType)
+      ? (prefillMeal as MealType)
+      : null;
+
   const [selectedDates, setSelectedDates] = useState<string[]>(() =>
     prefillDate && /^\d{4}-\d{2}-\d{2}$/.test(prefillDate) ? [prefillDate] : []
   );
-  const [eatingTime, setEatingTime] = useState(() => {
-    const t = new Date();
-    t.setHours(t.getHours() + 2, 0, 0, 0);
-    return t;
+  const [enabledMeals, setEnabledMeals] = useState<MealType[]>(() =>
+    initialMeal ? [initialMeal] : [...MEAL_TYPES]
+  );
+  const [mealTimes, setMealTimes] = useState<MealTimes>(defaultMealTimes);
+  const [dateMeals, setDateMeals] = useState<DateMeals>(() => {
+    if (prefillDate && /^\d{4}-\d{2}-\d{2}$/.test(prefillDate)) {
+      return {
+        [prefillDate]: initialMeal ? [initialMeal] : [...MEAL_TYPES],
+      };
+    }
+    return {};
   });
   const [reminderOffset, setReminderOffset] = useState(15);
   const [notes, setNotes] = useState("");
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [editingMealTime, setEditingMealTime] = useState<MealType | null>(null);
   const [scheduling, setScheduling] = useState(false);
 
   const totalMinutes = (recipe?.prep_time ?? 0) + (recipe?.cook_time ?? 0);
-
   const sortedDates = useMemo(() => [...selectedDates].sort(), [selectedDates]);
 
-  const previewEntries = useMemo(
-    () =>
-      sortedDates.map((key) => {
-        const eating = combineDateAndTime(fromDateKey(key), eatingTime);
+  const scheduleJobs = useMemo(() => {
+    const jobs: { key: string; meal: MealType; eating: Date; start: Date; reminder: Date; valid: boolean }[] = [];
+    for (const key of sortedDates) {
+      const mealsForDate = (dateMeals[key] ?? []).filter((m) => enabledMeals.includes(m));
+      for (const meal of mealsForDate) {
+        const eating = combineDateAndTime(fromDateKey(key), mealTimes[meal]);
         const start = new Date(eating.getTime() - totalMinutes * 60 * 1000);
         const reminder = new Date(start.getTime() - reminderOffset * 60 * 1000);
-        // Not enough runway between now and cooking start — the reminder/alarm
-        // would have nothing to fire against.
-        const valid = start.getTime() > Date.now();
-        return { key, eating, start, reminder, valid };
-      }),
-    [sortedDates, eatingTime, totalMinutes, reminderOffset]
-  );
+        jobs.push({
+          key,
+          meal,
+          eating,
+          start,
+          reminder,
+          valid: start.getTime() > Date.now(),
+        });
+      }
+    }
+    return jobs;
+  }, [sortedDates, dateMeals, enabledMeals, mealTimes, totalMinutes, reminderOffset]);
 
-  const invalidEntries = useMemo(
-    () => previewEntries.filter((e) => !e.valid),
-    [previewEntries]
-  );
+  const invalidJobs = useMemo(() => scheduleJobs.filter((j) => !j.valid), [scheduleJobs]);
 
   const markedDates = useMemo(() => {
     const marks: Record<string, any> = {};
@@ -112,19 +146,57 @@ export default function ScheduleMeal() {
     return marks;
   }, [selectedDates]);
 
+  const toggleGlobalMeal = (meal: MealType) => {
+    setEnabledMeals((prev) => {
+      const next = prev.includes(meal) ? prev.filter((m) => m !== meal) : [...prev, meal];
+      // Keep at least one meal type selected
+      if (next.length === 0) return prev;
+      setDateMeals((dm) => {
+        const updated: DateMeals = { ...dm };
+        for (const key of Object.keys(updated)) {
+          updated[key] = updated[key].filter((m) => next.includes(m));
+          if (updated[key].length === 0) updated[key] = [...next];
+        }
+        return updated;
+      });
+      return next;
+    });
+  };
+
   const toggleDate = (day: DateData) => {
     setSelectedDates((prev) => {
       if (prev.includes(day.dateString)) {
+        setDateMeals((dm) => {
+          const next = { ...dm };
+          delete next[day.dateString];
+          return next;
+        });
         return prev.filter((d) => d !== day.dateString);
       }
       if (prev.length >= MAX_SELECTABLE_DATES) {
         Alert.alert(
           "That's a lot of dates",
-          `You can schedule up to ${MAX_SELECTABLE_DATES} dates at once. Schedule this batch first, then add more.`
+          `You can schedule up to ${MAX_SELECTABLE_DATES} dates at once.`
         );
         return prev;
       }
+      setDateMeals((dm) => ({
+        ...dm,
+        [day.dateString]: [...enabledMeals],
+      }));
       return [...prev, day.dateString];
+    });
+  };
+
+  const toggleDateMeal = (dateKey: string, meal: MealType) => {
+    if (!enabledMeals.includes(meal)) return;
+    setDateMeals((prev) => {
+      const current = prev[dateKey] ?? [...enabledMeals];
+      const has = current.includes(meal);
+      const next = has ? current.filter((m) => m !== meal) : [...current, meal];
+      // Don't allow empty — keep at least one meal on a selected date
+      if (next.length === 0) return prev;
+      return { ...prev, [dateKey]: next };
     });
   };
 
@@ -151,44 +223,57 @@ export default function ScheduleMeal() {
       Alert.alert("Pick at least one date", "Tap a date on the calendar first.");
       return;
     }
-    if (invalidEntries.length > 0) {
+    if (scheduleJobs.length === 0) {
+      Alert.alert("Pick meal times", "Select at least one meal (Breakfast / Lunch / Snack / Dinner).");
+      return;
+    }
+    if (invalidJobs.length > 0) {
       Alert.alert(
         "Not enough time to cook",
-        `${recipe.title} needs ${totalMinutes} min (prep + cook). These dates don't leave ` +
-          `enough runway before your eating time — pick a later time or remove them:\n\n` +
-          invalidEntries.map((e) => formatDate(e.eating)).join("\n")
+        `${recipe.title} needs ${totalMinutes} min. These slots don't leave enough runway:\n\n` +
+          invalidJobs.map((j) => `${formatDate(j.eating)} · ${j.meal} ${formatTime(j.eating)}`).join("\n")
       );
       return;
     }
+
+    const notifOk = await ensureNotificationPermission();
+    if (!notifOk) {
+      Alert.alert(
+        "Enable notifications",
+        "Meal reminders need notification permission. Turn them on in Profile → Notifications, then try again."
+      );
+      return;
+    }
+
     setScheduling(true);
     const failures: string[] = [];
-    for (const key of sortedDates) {
-      const targetEatingTime = combineDateAndTime(fromDateKey(key), eatingTime);
+    for (const job of scheduleJobs) {
       try {
         await scheduleMeal.mutateAsync({
           recipe,
-          scheduledDate: fromDateKey(key),
-          targetEatingTime,
+          scheduledDate: fromDateKey(job.key),
+          targetEatingTime: job.eating,
           reminderOffsetMinutes: reminderOffset,
           notes,
+          mealType: job.meal,
         });
       } catch (e: any) {
-        failures.push(`${formatDate(fromDateKey(key))}: ${e.message || "failed"}`);
+        failures.push(`${formatDate(job.eating)} ${job.meal}: ${e.message || "failed"}`);
       }
     }
     setScheduling(false);
 
-    const scheduledCount = sortedDates.length - failures.length;
+    const scheduledCount = scheduleJobs.length - failures.length;
     if (failures.length === 0) {
       Alert.alert(
         "Meal scheduled!",
-        `${recipe.title} is scheduled on ${scheduledCount} date${scheduledCount > 1 ? "s" : ""} at ${formatTime(eatingTime)}.`,
+        `${recipe.title}: ${scheduledCount} reminder${scheduledCount > 1 ? "s" : ""} set. You'll get a notification before cooking starts.`,
         [{ text: "OK", onPress: () => router.replace("/(tabs)/scheduled") }]
       );
     } else {
       Alert.alert(
-        "Some dates couldn't be scheduled",
-        `Scheduled ${scheduledCount} of ${sortedDates.length}.\n\n${failures.join("\n")}`,
+        "Some slots couldn't be scheduled",
+        `Scheduled ${scheduledCount} of ${scheduleJobs.length}.\n\n${failures.join("\n")}`,
         [{ text: "OK", onPress: () => router.replace("/(tabs)/scheduled") }]
       );
     }
@@ -285,7 +370,52 @@ export default function ScheduleMeal() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Pick one or more dates</Text>
+        <Text style={styles.sectionTitle}>Meal times (pick which ones)</Text>
+        <Text style={styles.helperText}>Check Breakfast / Lunch / Snack / Dinner and set each time.</Text>
+        <View style={styles.mealBox}>
+          {MEAL_TYPES.map((meal) => {
+            const on = enabledMeals.includes(meal);
+            return (
+              <View key={meal} style={styles.mealRow}>
+                <TouchableOpacity style={styles.mealCheck} onPress={() => toggleGlobalMeal(meal)}>
+                  {on ? (
+                    <CheckSquare size={22} color="#E85D3F" />
+                  ) : (
+                    <Square size={22} color="#C9B8A8" />
+                  )}
+                  <Text style={[styles.mealLabel, !on && styles.mealLabelOff]}>{meal}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.timeChip, !on && { opacity: 0.4 }]}
+                  disabled={!on}
+                  onPress={() => setEditingMealTime(meal)}
+                >
+                  <Clock size={14} color="#E85D3F" />
+                  <Text style={styles.timeChipText}>{formatTime(mealTimes[meal])}</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </View>
+
+        {editingMealTime && (
+          <DateTimePicker
+            value={mealTimes[editingMealTime]}
+            mode="time"
+            display="default"
+            onValueChange={(event, selected) => {
+              const meal = editingMealTime;
+              setEditingMealTime(null);
+              if (selected && meal) {
+                setMealTimes((prev) => ({ ...prev, [meal]: selected }));
+              }
+            }}
+            onDismiss={() => setEditingMealTime(null)}
+          />
+        )}
+
+        <Text style={styles.sectionTitle}>Pick dates</Text>
+        <Text style={styles.helperText}>Tap any custom dates on the calendar.</Text>
         <View style={styles.calendarCard}>
           <Calendar
             current={selectedDates[0] ?? toDateKey(new Date())}
@@ -307,22 +437,45 @@ export default function ScheduleMeal() {
           </Text>
         )}
 
-        <Text style={styles.sectionTitle}>Eating time (applies to every selected date)</Text>
-        <TouchableOpacity style={styles.pickerButton} onPress={() => setShowTimePicker(true)}>
-          <Clock size={16} color="#E85D3F" />
-          <Text style={styles.pickerButtonText}>{formatTime(eatingTime)}</Text>
-        </TouchableOpacity>
-
-        {showTimePicker && (
-          <DateTimePicker
-            value={eatingTime}
-            mode="time"
-            display="default"
-            onChange={(event, selected) => {
-              setShowTimePicker(false);
-              if (event.type === "set" && selected) setEatingTime(selected);
-            }}
-          />
+        {sortedDates.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Meals per date</Text>
+            <Text style={styles.helperText}>
+              Example: first date = Lunch only, another date = Dinner — tick what you want on each day.
+            </Text>
+            {sortedDates.map((key) => (
+              <View key={key} style={styles.dateMealCard}>
+                <Text style={styles.dateMealHeading}>{formatDate(fromDateKey(key))}</Text>
+                <View style={styles.dateMealChips}>
+                  {MEAL_TYPES.map((meal) => {
+                    const available = enabledMeals.includes(meal);
+                    const selected = (dateMeals[key] ?? []).includes(meal);
+                    return (
+                      <TouchableOpacity
+                        key={meal}
+                        disabled={!available}
+                        style={[
+                          styles.dateChip,
+                          selected && available && styles.dateChipOn,
+                          !available && styles.dateChipDisabled,
+                        ]}
+                        onPress={() => toggleDateMeal(key, meal)}
+                      >
+                        <Text
+                          style={[
+                            styles.dateChipText,
+                            selected && available && styles.dateChipTextOn,
+                          ]}
+                        >
+                          {meal}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </>
         )}
 
         <Text style={styles.sectionTitle}>Remind me before cooking starts</Text>
@@ -342,25 +495,27 @@ export default function ScheduleMeal() {
           multiline
         />
 
-        {previewEntries.length > 0 && (
+        {scheduleJobs.length > 0 && (
           <View style={styles.previewBox}>
-            {previewEntries.map((entry) => (
-              <View key={entry.key} style={{ marginBottom: 10 }}>
-                <Text style={styles.previewDateHeading}>{formatDate(entry.eating)}</Text>
-                {entry.valid ? (
+            {scheduleJobs.map((job) => (
+              <View key={`${job.key}-${job.meal}`} style={{ marginBottom: 10 }}>
+                <Text style={styles.previewDateHeading}>
+                  {formatDate(job.eating)} · {job.meal} · {formatTime(job.eating)}
+                </Text>
+                {job.valid ? (
                   <>
                     <View style={styles.previewRow}>
                       <Bell size={14} color="#8A6558" />
-                      <Text style={styles.previewText}>Reminder at {formatTime(entry.reminder)}</Text>
+                      <Text style={styles.previewText}>Reminder at {formatTime(job.reminder)}</Text>
                     </View>
                     <View style={styles.previewRow}>
                       <Clock size={14} color="#8A6558" />
-                      <Text style={styles.previewText}>Start cooking at {formatTime(entry.start)}</Text>
+                      <Text style={styles.previewText}>Start cooking at {formatTime(job.start)}</Text>
                     </View>
                   </>
                 ) : (
                   <Text style={styles.previewWarningText}>
-                    Not enough time to cook before this eating time — pick a later time.
+                    Not enough time to cook before this eating time.
                   </Text>
                 )}
               </View>
@@ -371,16 +526,16 @@ export default function ScheduleMeal() {
         <TouchableOpacity
           style={[
             styles.scheduleButton,
-            (scheduling || sortedDates.length === 0 || invalidEntries.length > 0) && { opacity: 0.6 },
+            (scheduling || scheduleJobs.length === 0 || invalidJobs.length > 0) && { opacity: 0.6 },
           ]}
           onPress={handleSchedule}
-          disabled={scheduling || sortedDates.length === 0 || invalidEntries.length > 0}
+          disabled={scheduling || scheduleJobs.length === 0 || invalidJobs.length > 0}
         >
           <Text style={styles.scheduleButtonText}>
             {scheduling
               ? "Scheduling..."
-              : sortedDates.length > 1
-              ? `Schedule ${sortedDates.length} meals`
+              : scheduleJobs.length > 1
+              ? `Schedule ${scheduleJobs.length} meals`
               : "Schedule this meal"}
           </Text>
         </TouchableOpacity>
@@ -397,9 +552,33 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", marginBottom: 24 },
   statItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   statText: { fontSize: 13, color: "#8A7A6C" },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#2B2118", marginBottom: 10, marginTop: 8 },
+  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#2B2118", marginBottom: 6, marginTop: 8 },
+  helperText: { fontSize: 12, color: "#8A7A6C", marginBottom: 10, lineHeight: 17 },
   changeRecipeButton: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 12, alignSelf: "flex-start" },
   changeRecipeText: { fontSize: 13, color: "#E85D3F", fontWeight: "700" },
+  mealBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EFE2D6",
+    padding: 12,
+    gap: 10,
+    marginBottom: 8,
+  },
+  mealRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  mealCheck: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  mealLabel: { fontSize: 15, fontWeight: "600", color: "#2B2118" },
+  mealLabelOff: { color: "#B3A392" },
+  timeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FDE6DD",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  timeChipText: { fontSize: 13, fontWeight: "700", color: "#B7482E" },
   calendarCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -409,20 +588,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedCountText: { fontSize: 12, color: "#8A7A6C", marginBottom: 8 },
-  pickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  dateMealCard: {
     backgroundColor: "#fff",
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
     borderWidth: 1,
     borderColor: "#EFE2D6",
-    alignSelf: "flex-start",
+    padding: 12,
     marginBottom: 8,
   },
-  pickerButtonText: { fontSize: 14, fontWeight: "600", color: "#2B2118" },
+  dateMealHeading: { fontSize: 13, fontWeight: "700", color: "#2B2118", marginBottom: 8 },
+  dateMealChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  dateChip: {
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: "#F5EBE0",
+    borderWidth: 1,
+    borderColor: "#EFE2D6",
+  },
+  dateChipOn: { backgroundColor: "#E85D3F", borderColor: "#E85D3F" },
+  dateChipDisabled: { opacity: 0.35 },
+  dateChipText: { fontSize: 12, fontWeight: "600", color: "#8A7A6C" },
+  dateChipTextOn: { color: "#fff" },
   stepperRow: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 20 },
   stepperValue: { fontSize: 15, fontWeight: "700", color: "#2B2118", minWidth: 56, textAlign: "center" },
   notesInput: {
