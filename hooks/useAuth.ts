@@ -180,15 +180,26 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user) {
-        const p = await fetchProfile(data.session.user.id);
-        if (mounted) setProfile(p);
-      }
-      setInitializing(false);
-    });
+    // Startup must always finish: don't wait on the profile network call, and
+    // never leave `initializing` stuck (that keeps the splash screen up forever).
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!mounted) return;
+        setSession(data.session);
+        setInitializing(false);
+        if (data.session?.user) {
+          fetchProfile(data.session.user.id)
+            .then((p) => {
+              if (mounted) setProfile(p);
+            })
+            .catch(() => {});
+        }
+      })
+      .catch((e) => {
+        console.warn("getSession failed", String(e));
+        if (mounted) setInitializing(false);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession);
@@ -305,6 +316,19 @@ export function useAuth() {
     reset();
   }, [reset]);
 
+  const deleteAccount = useCallback(async () => {
+    const uid = session?.user?.id;
+    if (!uid) throw new Error("Not signed in.");
+    const { data: files } = await supabase.storage.from("avatars").list(uid);
+    if (files && files.length > 0) {
+      await supabase.storage.from("avatars").remove(files.map((f) => `${uid}/${f.name}`));
+    }
+    const { error } = await supabase.rpc("delete_my_account");
+    if (error) throw error;
+    await supabase.auth.signOut({ scope: "local" });
+    reset();
+  }, [session?.user?.id, reset]);
+
   return {
     session,
     user: session?.user ?? null,
@@ -316,5 +340,6 @@ export function useAuth() {
     signInWithGoogle,
     sendPasswordReset,
     signOut,
+    deleteAccount,
   };
 }

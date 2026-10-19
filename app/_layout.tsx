@@ -16,6 +16,11 @@ LogBox.ignoreLogs(["Cannot connect to Expo CLI"]);
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Failsafe: never keep the native splash up longer than this, even if startup stalls.
+setTimeout(() => {
+  SplashScreen.hideAsync().catch(() => {});
+}, 8000);
+
 function useProtectedRoute() {
   const { isAuthenticated, initializing } = useAuth();
   const segments = useSegments();
@@ -68,9 +73,7 @@ function useProtectedRoute() {
       return;
     }
 
-    setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 4000);
+    SplashScreen.hideAsync().catch(() => {});
   }, [isAuthenticated, initializing, segments, onboardingChecked, onboardingDone]);
 
   // First install / first login: explain then ask for notification permission

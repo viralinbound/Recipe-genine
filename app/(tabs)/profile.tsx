@@ -33,7 +33,7 @@ import {
 import { setNotificationPrompted } from "@/lib/notificationPromptStorage";
 
 export default function Profile() {
-  const { profile, user, signOut } = useAuth();
+  const { profile, user, signOut, deleteAccount } = useAuth();
   const setProfile = useAuthStore((s) => s.setProfile);
   const { data: recipes = [] } = useRecipes();
   const { data: collections = [] } = useCollections();
@@ -234,10 +234,35 @@ export default function Profile() {
     });
   };
 
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently deletes your account, recipes, collections and meal schedule. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAccount();
+            } catch (e: any) {
+              Alert.alert("Delete failed", e.message ?? "Try again.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSignOut = () => {
     Alert.alert("Sign out?", "", [
       { text: "Cancel", style: "cancel" },
       { text: "Sign out", style: "destructive", onPress: signOut },
+      // iOS only (App Store guideline 5.1.1(v)); Android stays unchanged.
+      ...(Platform.OS === "ios"
+        ? [{ text: "Delete account", style: "destructive" as const, onPress: confirmDeleteAccount }]
+        : []),
     ]);
   };
 

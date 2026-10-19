@@ -112,9 +112,12 @@ export default function Login() {
             <Text style={styles.buttonText}>{loading ? "Signing in..." : "Log in"}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.googleButton} onPress={handleGoogle}>
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
+          {/* Hidden on iOS: App Store guideline 4.8 would require Sign in with Apple alongside it. */}
+          {Platform.OS !== "ios" && (
+            <TouchableOpacity style={styles.googleButton} onPress={handleGoogle}>
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
+          )}
 
         </View>
 
