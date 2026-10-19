@@ -104,7 +104,7 @@ export default function CollectionDetail() {
             <Text style={styles.emptyText}>
               No recipes here yet. Open a recipe and tap "Save to collection".
             </Text>
-          ) : null
+          ) : undefined
         }
       />
     </SafeAreaView>

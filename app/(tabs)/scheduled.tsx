@@ -92,7 +92,7 @@ export default function Scheduled() {
             <Text style={styles.emptyText}>
               No meals scheduled yet. Open a recipe and tap "Schedule this meal".
             </Text>
-          ) : null
+          ) : undefined
         }
       />
     </SafeAreaView>

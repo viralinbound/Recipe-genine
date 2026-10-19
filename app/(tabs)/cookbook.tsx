@@ -199,7 +199,7 @@ export default function Cookbook() {
         ListEmptyComponent={
           !isLoading ? (
             <Text style={styles.emptyText}>No recipes found.</Text>
-          ) : null
+          ) : undefined
         }
       />
 

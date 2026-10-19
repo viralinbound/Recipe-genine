@@ -7,11 +7,6 @@
     "orientation": "default",
     "icon": "./assets/chef-icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/chef-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFF7EB"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
