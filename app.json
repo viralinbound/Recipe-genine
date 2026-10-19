@@ -98,7 +98,9 @@
         {
           "calendarPermission": "Recipe Genie adds a calendar event when you schedule a meal, spanning cooking start to eating time."
         }
-      ]
+      ],
+      "expo-web-browser",
+      "./plugins/withSceneLifecycle"
     ],
     "extra": {
       "router": {
