@@ -1,7 +1,9 @@
 import { Platform, Linking, PermissionsAndroid } from "react-native";
 import Constants from "expo-constants";
 
-const MEAL_REMINDER_CHANNEL_ID = "meal-reminders";
+// Android channel settings are frozen once created, so the ring-on-silent settings
+// need a new channel ID. The old "meal-reminders" channel is left as is.
+const MEAL_REMINDER_CHANNEL_ID = "meal-reminders-alarm";
 
 const isExpoGo =
   Constants.appOwnership === "expo" ||
@@ -114,7 +116,14 @@ export async function ensureNotificationPermission(): Promise<boolean> {
         vibrationPattern: [0, 250, 250, 250],
         enableVibrate: true,
         lockscreenVisibility: mod.AndroidNotificationVisibility.PUBLIC,
-        bypassDnd: false,
+        // ALARM usage plays on the alarm volume, so the default tone still rings when the
+        // ringer is on silent. bypassDnd only takes effect if the user allows it in settings.
+        bypassDnd: true,
+        audioAttributes: {
+          usage: (mod as any).AndroidAudioUsage?.ALARM ?? 4,
+          contentType: (mod as any).AndroidAudioContentType?.SONIFICATION ?? 4,
+          flags: { enforceAudibility: true, requestHardwareAudioVideoSynchronization: false },
+        },
       });
     }
 
@@ -194,6 +203,9 @@ export async function scheduleCookingReminder(
         recipeTitle: params.recipeTitle,
       },
       ...(Platform.OS === "android" ? { channelId: MEAL_REMINDER_CHANNEL_ID } : {}),
+      // iOS 15+: lights up the screen and breaks through Focus. The silent switch still
+      // mutes sound on iOS; only Apple-approved Critical Alerts can override it.
+      ...(Platform.OS === "ios" ? { interruptionLevel: "timeSensitive" as const } : {}),
     },
     trigger: {
       type: mod.SchedulableTriggerInputTypes.DATE,

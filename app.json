@@ -19,6 +19,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "dev.recipegenie.app",
       "buildNumber": "1",
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      },
       "infoPlist": {
         "NSCalendarsUsageDescription": "Recipe Genie adds a calendar event when you schedule a meal, spanning cooking start to eating time.",
         "ITSAppUsesNonExemptEncryption": false,
