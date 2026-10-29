@@ -349,16 +349,13 @@ export default function Profile() {
             <ChevronRight size={18} color="#B3A392" />
           </TouchableOpacity>
 
-          {/* iOS only (App Store guideline 5.1.1(v)); Android stays unchanged. */}
-          {Platform.OS === "ios" && (
-            <TouchableOpacity style={styles.row} onPress={confirmDeleteAccount} testID="delete-account-row">
-              <View style={styles.rowLeft}>
-                <Trash2 size={18} color="#D93B2B" />
-                <Text style={[styles.rowText, { color: "#D93B2B" }]}>Delete account</Text>
-              </View>
-              <ChevronRight size={18} color="#B3A392" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={styles.row} onPress={confirmDeleteAccount} testID="delete-account-row">
+            <View style={styles.rowLeft}>
+              <Trash2 size={18} color="#D93B2B" />
+              <Text style={[styles.rowText, { color: "#D93B2B" }]}>Delete account</Text>
+            </View>
+            <ChevronRight size={18} color="#B3A392" />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
