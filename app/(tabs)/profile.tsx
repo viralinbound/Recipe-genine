@@ -18,7 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
-import { User, ChevronRight, LogOut, Bell, Mail, Share2, Camera } from "lucide-react-native";
+import { User, ChevronRight, LogOut, Bell, Mail, Share2, Camera, Trash2 } from "lucide-react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/authStore";
 import { useRecipes } from "@/hooks/useRecipes";
@@ -259,10 +259,6 @@ export default function Profile() {
     Alert.alert("Sign out?", "", [
       { text: "Cancel", style: "cancel" },
       { text: "Sign out", style: "destructive", onPress: signOut },
-      // iOS only (App Store guideline 5.1.1(v)); Android stays unchanged.
-      ...(Platform.OS === "ios"
-        ? [{ text: "Delete account", style: "destructive" as const, onPress: confirmDeleteAccount }]
-        : []),
     ]);
   };
 
@@ -352,6 +348,17 @@ export default function Profile() {
             </View>
             <ChevronRight size={18} color="#B3A392" />
           </TouchableOpacity>
+
+          {/* iOS only (App Store guideline 5.1.1(v)); Android stays unchanged. */}
+          {Platform.OS === "ios" && (
+            <TouchableOpacity style={styles.row} onPress={confirmDeleteAccount} testID="delete-account-row">
+              <View style={styles.rowLeft}>
+                <Trash2 size={18} color="#D93B2B" />
+                <Text style={[styles.rowText, { color: "#D93B2B" }]}>Delete account</Text>
+              </View>
+              <ChevronRight size={18} color="#B3A392" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
